@@ -13,7 +13,6 @@ import java.io.File;
 public class View extends JFrame implements ActionListener, DocumentListener {
 
     // Service definitions
-    private EncryptService encryptService;
 
     // Controller definition
     private MainController mainController;
@@ -36,8 +35,8 @@ public class View extends JFrame implements ActionListener, DocumentListener {
     private String passwordEncryptLabel = "Password to encrypt file";
     private String selectEncryptFile = "Upload file to encrypt";
 
+
     public View(String viewTitle) {
-        encryptService = new EncryptService();
         renderMainFrame(viewTitle);
         renderEncryptComponents();
         refreshAfterRender();
@@ -120,7 +119,7 @@ public class View extends JFrame implements ActionListener, DocumentListener {
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == encryptButton) {
             System.out.println("SHOULD ENCRYPT FILE");
-            mainController.encryptFile(fileToEncrypt, String.valueOf(passwordTextField.getPassword()));
+            mainController.encryptFile(fileToEncrypt, passwordTextField.getPassword());
             helperTextLabel.setText("Please wait while file is encrypted... This won't take much");
             encryptButton.setEnabled(false);
         }
