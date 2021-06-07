@@ -9,6 +9,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
 
 public class View extends JFrame implements ActionListener, DocumentListener {
 
@@ -107,22 +108,33 @@ public class View extends JFrame implements ActionListener, DocumentListener {
         setSize(800,800);
     }
 
-    public void notifyEncryptSucceeded() {
-        encryptButton.setEnabled(true);
-        helperTextLabel.setText("Successfully encrypted file");
-    }
-
     /**
      * Action Listeners
      */
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == encryptButton) {
-            System.out.println("SHOULD ENCRYPT FILE");
-            mainController.encryptFile(fileToEncrypt, passwordTextField.getPassword());
-            helperTextLabel.setText("Please wait while file is encrypted... This won't take much");
-            encryptButton.setEnabled(false);
+            try {
+                mainController.encryptFile(fileToEncrypt, passwordTextField.getPassword());
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+                helperTextLabel.setText("Please wait while file is encrypted... This won't take much");
+                encryptButton.setEnabled(false);
+            }
         }
+    }
+
+    public void notifyEncryptFinished(String result, File file) throws IOException {
+        String message = "";
+        if (result == "OK") {
+            message = "Successfully encrypted file: " +file.getCanonicalPath();
+        } else {
+            message = "Failed to encrypt file: " +file.getCanonicalPath();
+        }
+        encryptButton.setEnabled(false);
+        helperTextLabel.setText("");
+        passwordTextField.setText("");
+        JOptionPane.showMessageDialog(this, message, "Encrypt finished.", JOptionPane.INFORMATION_MESSAGE);
     }
 
     @Override

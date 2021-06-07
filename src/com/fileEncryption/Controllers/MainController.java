@@ -4,6 +4,9 @@ import com.fileEncryption.Services.EncryptService;
 import com.fileEncryption.view.View;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainController {
 
@@ -15,15 +18,15 @@ public class MainController {
         encryptService = new EncryptService();
     }
 
-    public void encryptFile(File file, char[] password) {
-        String result = null;
+    public void encryptFile(File file, char[] password) throws IOException {
+        String message = null;
         try {
-            result = encryptService.encryptFile(password, file);
+            message = encryptService.encryptFile(password, file);
         } catch (Exception e) {
             e.printStackTrace();
+            message = "ERROR";
         }
 
-        System.out.println(result);
-
+        view.notifyEncryptFinished(message, file);
     }
 }

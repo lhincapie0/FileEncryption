@@ -1,8 +1,11 @@
 package com.fileEncryption.Services;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
+import java.util.HashMap;
+import java.util.Map;
 import javax.crypto.*;
 import javax.crypto.spec.*;
 public class EncryptService {
@@ -31,9 +34,33 @@ public class EncryptService {
         outFile.createNewFile();
 
         encryptFile(encryptedKey, inFile, outFile);
-        return "Successfully encrypted";
+        return "OK";
     }
 
+    public void generateShaKey(File inFile, File outFile) throws NoSuchAlgorithmException, IOException {
+        MessageDigest sha1 = MessageDigest.getInstance("SHA1");
+        FileInputStream fileInStream = new FileInputStream(inFile);
+        FileOutputStream fileOutStream = new FileOutputStream(FileDescriptor.out);
+
+        byte[] data = new byte[1024];
+        int read = 0;
+        while ((read = fileInStream.read(data)) != -1) {
+            sha1.update(data, 0, read);
+        }
+        ;
+        byte[] hashBytes = sha1.digest();
+
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < hashBytes.length; i++) {
+            sb.append(Integer.toString((hashBytes[i] & 0xff) + 0x100, 16).substring(1));
+        }
+        String fileHash = sb.toString();
+
+        fileOutStream.write(fileHash.getBytes(Charset.forName("UTF-8")));
+
+        fileInStream.close();
+        fileOutStream.close();
+    }
 
 
     private byte[] encryptPasswordWithPBKDF2(char[] password) {
