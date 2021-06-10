@@ -4,50 +4,45 @@ import java.nio.charset.Charset;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
-import java.util.HashMap;
-import java.util.Map;
 import javax.crypto.*;
 import javax.crypto.spec.*;
 public class EncryptService {
 
-    private String decyrptAlgorihtm = "PBKDF2WithHmacSHA512";
-    private int iterations = 65536;
-    private int keyLength = 128;
-    private int saltBytesSize = 16;
-    private String secureRandomSalt = "SHA1PRNG";
+    public final static String SHA_1 = "SHA1";
+    public final static int SHA_KEY_LENGTH = 1024;
+    public final static String SALT = "4321";
+    public final static int ITERATIONS = 10000;
+    public final static int KEY_LENGTH = 128;
+    public final static String  ENCRYPT_KEY_ALGORITHM = "PBKDF2WithHmacSHA512";
+
     public EncryptService() {
 
     }
 
-    public String getSalt() throws NoSuchAlgorithmException {
-        byte[] salt = new byte[saltBytesSize];
-        SecureRandom.getInstance(secureRandomSalt).nextBytes(salt);
-        return new String(salt);
-    }
 
-    public String encryptFile(char[] password, File file) throws Exception {
-        byte[] encryptedKey = encryptPasswordWithPBKDF2(password);
-
-        File inFile = new File(file.getPath()+".cif");
+    public String encryptFile(char[] password, File originalFile) throws Exception {
+        byte[] key = encryptPasswordWithPBKDF2(password);
+        File inFile = new File(originalFile.getPath()+".cif");
         inFile.createNewFile();
-        File outFile = new File(file.getPath()+".hash");
+        File outFile = new File(originalFile.getPath()+".hash");
         outFile.createNewFile();
 
-        encryptFile(encryptedKey, inFile, outFile);
+        encryptFile(key, originalFile, inFile);
+        writeSha1Key(originalFile, outFile);
         return "OK";
     }
 
-    public void generateShaKey(File inFile, File outFile) throws NoSuchAlgorithmException, IOException {
-        MessageDigest sha1 = MessageDigest.getInstance("SHA1");
-        FileInputStream fileInStream = new FileInputStream(inFile);
-        FileOutputStream fileOutStream = new FileOutputStream(FileDescriptor.out);
+    private void writeSha1Key(File originalFile, File fileOut) throws NoSuchAlgorithmException, IOException {
+        MessageDigest sha1 = MessageDigest.getInstance(SHA_1);
+        FileInputStream fis = new FileInputStream(originalFile);
+        FileOutputStream fos = new FileOutputStream(fileOut);
 
-        byte[] data = new byte[1024];
+        byte[] data = new byte[SHA_KEY_LENGTH];
         int read = 0;
-        while ((read = fileInStream.read(data)) != -1) {
+        while ((read = fis.read(data)) != -1) {
             sha1.update(data, 0, read);
         }
-        ;
+
         byte[] hashBytes = sha1.digest();
 
         StringBuffer sb = new StringBuffer();
@@ -56,20 +51,19 @@ public class EncryptService {
         }
         String fileHash = sb.toString();
 
-        fileOutStream.write(fileHash.getBytes(Charset.forName("UTF-8")));
+        fos.write(fileHash.getBytes(Charset.forName("UTF-8")));
 
-        fileInStream.close();
-        fileOutStream.close();
+        fis.close();
+        fos.close();
     }
 
 
     private byte[] encryptPasswordWithPBKDF2(char[] password) {
         try {
-            String salt = getSalt();
-            byte[] saltBytes = salt.getBytes();
-            SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance(decyrptAlgorihtm);
-            PBEKeySpec keySpec = new PBEKeySpec(password, saltBytes, iterations, keyLength);
-            SecretKey key = secretKeyFactory.generateSecret(keySpec);
+            byte[] salt = SALT.getBytes();
+            SecretKeyFactory kf = SecretKeyFactory.getInstance(ENCRYPT_KEY_ALGORITHM);
+            PBEKeySpec spec = new PBEKeySpec(password, salt, ITERATIONS, KEY_LENGTH);
+            SecretKey key = kf.generateSecret(spec);
             return key.getEncoded();
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new RuntimeException(e);
@@ -78,16 +72,18 @@ public class EncryptService {
 
     public static void encryptFile(byte[] key, File in, File out) throws NoSuchPaddingException, NoSuchAlgorithmException, IOException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
         KeySpec keySpec = new SecretKeySpec(key, "AES");
-
         Cipher cf = Cipher.getInstance("AES/ECB/PKCS5Padding");
         cf.init(Cipher.ENCRYPT_MODE, (SecretKeySpec) keySpec);
 
         FileInputStream fileInputStream = new FileInputStream(in);
         FileOutputStream fileOutputStream = new FileOutputStream(out);
 
+
+        // Determine the size of the buffer
         int bufferBytes = Math.min(fileInputStream.available(), 64);
         byte[] buffer = new byte[bufferBytes];
 
+        // While remaining bytes still fit in a 64byte buffer.
         while (buffer.length == 64) {
             fileInputStream.read(buffer);
             byte[] encryptedBuffer = cf.update(buffer);
@@ -96,6 +92,7 @@ public class EncryptService {
             buffer = new byte[bufferBytes];
         }
 
+        // Last portion of data
         fileInputStream.read(buffer);
         byte[] encryptedBuffer = cf.doFinal(buffer);
         fileOutputStream.write(encryptedBuffer);
