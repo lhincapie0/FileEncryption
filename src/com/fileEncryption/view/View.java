@@ -1,6 +1,5 @@
 package com.fileEncryption.view;
 import com.fileEncryption.Controllers.MainController;
-import com.fileEncryption.Services.EncryptService;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -13,7 +12,6 @@ import java.io.IOException;
 
 public class View extends JFrame implements ActionListener, DocumentListener {
 
-    // Service definitions
 
     // Controller definition
     private MainController mainController;
@@ -22,8 +20,6 @@ public class View extends JFrame implements ActionListener, DocumentListener {
     private JLabel passwordLabel;
     private JPasswordField passwordTextField;
     private JButton selectEncryptFileButton;
-
-    private JFileChooser fileReaderEncryptFile;
 
     private JButton encryptButton;
     private File fileToEncrypt;
