@@ -25,6 +25,18 @@ public class View extends JFrame implements ActionListener, DocumentListener {
     private File fileToEncrypt;
 
     private JLabel helperTextLabel;
+
+    // Components decrypt
+
+    private JLabel passwordDecrypt;
+    private JPasswordField passwordDecryptTextField;
+    private JButton selectDecryptFileButton;
+    private JButton selectHashFileButton;
+    private JButton decryptButton;
+
+    private File fileToDecrypt;
+    private File hashFile;
+
     /**
      * String labels
      */
@@ -32,10 +44,16 @@ public class View extends JFrame implements ActionListener, DocumentListener {
     private String passwordEncryptLabel = "Password to encrypt file";
     private String selectEncryptFile = "Upload file to encrypt";
 
+    private String decryptButtonLabel = "Decrypt file";
+    private String passwordDecryptLabel = "Password to decrypt file";
+    private String selectDecryptFile = "Upload file to decrypt";
+    private String selectHashFile = "Upload Hash to decrypt file";
+
 
     public View(String viewTitle) {
         renderMainFrame(viewTitle);
         renderEncryptComponents();
+        renderDecryptComponents();
         refreshAfterRender();
     }
 
@@ -69,7 +87,7 @@ public class View extends JFrame implements ActionListener, DocumentListener {
 
         // Encrypt button
         encryptButton = new JButton(encryptButtonLabel);
-        encryptButton.setEnabled(false);
+//        encryptButton.setEnabled(false);
         encryptButton.addActionListener(this);
 
         // Components added to layout
@@ -85,6 +103,40 @@ public class View extends JFrame implements ActionListener, DocumentListener {
         addActionToEncryptButton(selectEncryptFileButton);
     }
 
+    private void renderDecryptComponents() {
+        // Password label
+        passwordDecrypt = new JLabel(passwordDecryptLabel);
+
+        // Password text field
+        passwordDecryptTextField = new JPasswordField();
+        passwordDecryptTextField.setColumns(30);
+        passwordDecryptTextField.addActionListener(this);
+        passwordDecryptTextField.getDocument().addDocumentListener(this);
+//
+//        // Button to select file
+        selectDecryptFileButton = new JButton(selectDecryptFile);
+        selectDecryptFileButton.setBounds(50,100,60,110);
+//
+        // Encrypt button
+        decryptButton = new JButton(decryptButtonLabel);
+        decryptButton.setEnabled(false);
+        decryptButton.addActionListener(this);
+
+        selectHashFileButton = new JButton(selectHashFile);
+        selectHashFileButton.setBounds(50,100,60,110);
+
+//
+//        // Components added to layout
+        add(passwordDecrypt);
+        add(passwordDecryptTextField);
+        add(selectDecryptFileButton);
+        add(selectHashFileButton);
+        add(decryptButton);
+
+        addActionToSelectDecryptFile(selectDecryptFileButton);
+        addActionToSelectHashFile(selectHashFileButton);
+    }
+
     private void addActionToEncryptButton(JButton button) {
         button.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
@@ -95,6 +147,34 @@ public class View extends JFrame implements ActionListener, DocumentListener {
                 encryptButton.setEnabled(true);
             }else {
                 JOptionPane.showMessageDialog(this, "Please select a file to encrypt", "Invalid Value",JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    }
+
+    private void addActionToSelectDecryptFile(JButton button) {
+        button.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            int selection = fileChooser.showOpenDialog(this);
+
+            if(selection == JFileChooser.APPROVE_OPTION) {
+                fileToDecrypt = fileChooser.getSelectedFile();
+                decryptButton.setEnabled(true);
+            }else {
+                JOptionPane.showMessageDialog(this, "Please select a file to decrypt", "Invalid Value",JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    }
+
+    private void addActionToSelectHashFile(JButton button) {
+        button.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            int selection = fileChooser.showOpenDialog(this);
+
+            if(selection == JFileChooser.APPROVE_OPTION) {
+                hashFile = fileChooser.getSelectedFile();
+                decryptButton.setEnabled(true);
+            }else {
+                JOptionPane.showMessageDialog(this, "Please select a file with the hash", "Invalid Value",JOptionPane.ERROR_MESSAGE);
             }
         });
     }
@@ -118,6 +198,18 @@ public class View extends JFrame implements ActionListener, DocumentListener {
                 encryptButton.setEnabled(false);
             }
         }
+        if (e.getSource() == decryptButton) {
+
+            try {
+            	System.out.println("llegue");
+            	mainController.decryptFile(passwordDecryptTextField.getPassword(), fileToDecrypt, hashFile);
+            }catch (Exception exception) {
+            	exception.printStackTrace();
+                helperTextLabel.setText("Please wait while file is dencrypted... This won't take much");
+                encryptButton.setEnabled(false);
+            }
+
+        }
     }
 
     public void notifyEncryptFinished(String result, File file) throws IOException {
@@ -133,6 +225,19 @@ public class View extends JFrame implements ActionListener, DocumentListener {
         JOptionPane.showMessageDialog(this, message, "Encrypt finished.", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    
+    public void notifyDencryptFinished(String result, File file) throws IOException {
+        String message = "";
+        if (result == "OK") {
+            message = "decrypted successfully, the file hashes match, file: " +file.getCanonicalPath();
+        } else {
+            message = "decryption failed, file hashes don't match, file: " +file.getCanonicalPath();
+        }
+        encryptButton.setEnabled(false);
+        helperTextLabel.setText("");
+        passwordTextField.setText("");
+        JOptionPane.showMessageDialog(this, message, "Dencrypt finished.", JOptionPane.INFORMATION_MESSAGE);
+    }
     @Override
     public void insertUpdate(DocumentEvent e) {
         if (e.getDocument() == passwordTextField.getDocument() && fileToEncrypt != null) {
